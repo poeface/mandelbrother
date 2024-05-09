@@ -1,65 +1,5 @@
 import numpy as np
-# import sympy as sym
-# import scipy.sparse as sps
 import matplotlib.pyplot as plt
-# from scipy.constants import c, mu_0, epsilon_0
-# import time
-
-# lam = 1 #wavelength
-# # width, N = 10*lam, 350
-# # width, N = 20*lam, 301
-# width, N = 20*lam, 201
-# # width, N = 10*lam, 250
-# (X, Y), IDX = np.meshgrid(np.linspace(0,width,N), np.linspace(0,width,N), indexing='ij'), np.arange(N*N).reshape(N,N)
-# h, omega, mu, epsilon, sigma = width/N, 2*np.pi*c/lam, mu_0, epsilon_0*np.ones_like(X,dtype=complex), np.ones_like(X)
-# dist = np.sqrt((X-width/2)**2+(Y-width/2)**2)
-#
-# #nanoantenna
-# n = 2
-# guide_w = (lam / n) * 0.4
-# epsilon[np.logical_and(Y>width/2-guide_w/2,Y<width/2+guide_w/2)] = (n**2) * epsilon_0
-# epsilon[X>width/2] = 1 * epsilon_0
-# epsilon[dist < 2*lam/n] = (n**2)*epsilon_0
-#
-# sigma = np.maximum(10*(X-width/2)**18/(width/2)**18, 10*(Y-width/2)**18/(width/2)**18)
-# J = np.zeros((N,N))#; J[N//4,N//2] = 1.0
-# x, y, eps = sym.symbols('x y eps') #symbolic form
-# basis, nbase = [(h-x)*(h-y)/h**2, x*(h-y)/h**2, (h-x)*y/h**2, x*y/h**2], 4 # max at [(0,0), (h,0), (0,h), (h,h)]
-# pts = [(0,0), (1,0), (0,1), (1,1)] #which corner is for which basis
-# #plane wave:
-# # theta = np.pi+np.pi/6; kx, ky = np.cos(theta), np.sin(theta)
-# # Esrc = sym.exp(1j*(2*sym.pi/lam)*(kx*x+ky*y))
-# #point source
-# x0, y0 = sym.symbols('x0 y0')
-# Esrc = sym.hankel1(0,2*sym.pi/lam*sym.sqrt((x-x0)**2+(y-y0)**2))
-# helmholtz = lambda g: omega**2*mu*eps*g + (g.diff(x).diff(x) + g.diff(y).diff(y)) #no 'by parts, so +
-# Hsrc = sym.simplify(helmholtz(Esrc))
-# inner = lambda f, g: complex(sym.integrate(sym.integrate(f * g, (x,0,h)), (y,0,h)).evalf())
-# Kdata, JFdata, EFdata, rows, cols, start = [],[],[],[],[], time.time()
-# for i,f,pt_i in zip(range(nbase),basis,pts):
-#     for j,g,pt_j in zip(range(nbase),basis,pts):
-#         row_slc, col_slc = np.s_[pt_i[0]:(N-1+pt_i[0]), pt_i[1]:(N-1+pt_i[1])], np.s_[pt_j[0]:(N-1+pt_j[0]), pt_j[1]:(N-1+pt_j[1])]
-#         newK = (omega**2*mu*epsilon[:N-1,:N-1]*inner(f,g) - (1/(1+1j*sigma[:N-1,:N-1]))**2*(inner(f.diff(x),g.diff(x)) + inner(f.diff(y),g.diff(y))))
-#         newJF = (-1j*omega*mu*inner(f,g))
-#         newEF = inner(f,g)*sym.lambdify([x,y,x0,y0,eps], Hsrc)(X[col_slc],Y[col_slc],width/1.25,width/2,epsilon[:N-1,:N-1])
-#         newEF[np.isnan(newEF)] = 0 #fix singularities in point source
-#         newrows, newcols = IDX[row_slc], IDX[col_slc]
-#         Kdata, JFdata = np.hstack((Kdata,newK.flatten())), np.hstack((JFdata,newJF*np.ones((N-1)*(N-1))))
-#         EFdata = np.hstack((EFdata,newEF.flatten()))
-#         rows, cols = np.hstack((rows,newrows.flatten())), np.hstack((cols,newcols.flatten()))
-# K, JF, EF = sps.coo_matrix((Kdata,(rows,cols)),shape=(N*N,N*N)), sps.coo_matrix((JFdata,(rows,cols)),shape=(N*N,N*N)), sps.coo_array((EFdata,(rows,np.zeros_like(rows))), shape=(N*N,1))
-# Esct, runtime = sps.linalg.spsolve(K.tocsr(), JF.tocsr() @ J.flatten()[:,None] - EF).reshape(N,N), time.time() - start
-# Esrc = sym.lambdify([x,y,x0,y0],Esrc)(X,Y,width/1.25,width/2)
-# Esrc[np.isnan(Esrc)] = 1 #fix singularities
-# Etot = Esct + Esrc
-# print(f'solved {N*N} DoF','in %3.2fs' % runtime)
-# fig, ax = plt.subplots()
-# ax.imshow(np.abs(Etot).T, cmap='jet', origin='lower', vmin=0, vmax=np.max(np.abs(Etot)))
-# # ax.imshow(np.abs(Etot).T, cmap='jet', origin='lower', vmin=0, vmax=5)
-# # plt.imshow(np.real(Etot).T, cmap='RdBu', origin='lower',vmin=-np.max(np.abs(Etot)), vmax=np.max(np.abs(Etot)))
-# # plt.show()
-# # exit()
-
 from moderngl import *
 import moderngl
 from pyrr import Matrix44 #for perspective
@@ -84,10 +24,8 @@ class FieldPlot(mglw.WindowConfig):
     order = None
     sweep = 0
     cycles = None
-    # mouse = (0,0) #current mouse position
 
     def __init__(self, **kwargs):
-        # print(kwargs)
         super().__init__(**kwargs)
 
         self.prog = self.ctx.program(
@@ -116,7 +54,6 @@ class FieldPlot(mglw.WindowConfig):
                 uniform vec2 center;
                 uniform float scale;
                 uniform int cycles;
-                uniform float order;
 
                 vec3 inferno(float x) { //this is just a fourth order fit of the inferno colormap
                     float r = 128.333*x + 1447.333*pow(x,2) - 2235.333*pow(x,3) + 906.666*pow(x,4);
@@ -166,40 +103,21 @@ class FieldPlot(mglw.WindowConfig):
                         //zn = csum(csum(cprod(zp, zp), cscale(1/10.0,conj(zp))), cdiff(cscale(scale, v_field), center)); //z^2 + z' + c //THIS ONE IS SUPER COOL
                         //zn = csum(conj(cprod(zp, zp)), cdiff(cscale(scale, v_field), center)); //MANDELBROT (z^2)' + c
                         //zn = csum(conj(zp), cdiff(cscale(scale, v_field), center)); //MANDELBROT z' + c
-                        //zn = csum(conj(zp), cdiff(cscale(scale, v_field), center)); //MANDELBROT z' + c
 
-                        //zn = csum(cpow(zp, order), cdiff(cscale(scale, v_field), center)); //DYNAMIC
-
-                        //zn = vec2(-zp2.x - zn.x + (scale * v_field.x - center.x), zp2.y + zn.y + (scale * v_field.y - center.y));
-                        //zn = vec2(zp2.x - (scale * v_field.x - center.x), zp2.y - (scale * v_field.y - center.y)); //part looks like a muscle cross-section
-                        //zn = vec2(2*zp2.x + (scale * v_field.x - center.x), zp2.y + (scale * v_field.y - center.y));
                         v = sqrt(zn.x*zn.x + zn.y*zn.y);
                         if (v > 2.0) {
                             break;
                         }
                         count += 1;
                     }
-                    //float E_norm = sqrt(v_field[0]*v_field[0] + v_field[1]*v_field[1]);
-                    //float E_norm = sqrt(zn[0]*zn[0] + zn[1]*zn[1]);
-                    //f_color = vec4(inferno(E_norm), 0.0);
-                    //f_color = vec4(inferno(v/10-0.5), 0.0);
-                    //f_color = vec4(inferno(v), 0.0);
-                    //f_color = vec4(0.0,v/5,0.0,0.0);
-                    //f_color = vec4(inferno(v/5),0.0);
-                    //f_color = vec4(inferno(count/(cycles/1.5)),0.0);
-
-                    //f_color = vec4(inferno(count/(cycles/1.2)),0.0); //VERY GOOD
                     f_color = vec4(inferno(count/(cycles/1.3)),0.0); //VERY GOOD
                 }
             ''',
         )
 
-        # print(self.prog._members.keys())
-
         self.center = self.prog['center']
         self.scale = self.prog['scale']
         self.cycles = self.prog['cycles']
-        # self.order = self.prog['order']
 
         self.center.value = (0.7,0)
         self.scale.value = 2
@@ -214,7 +132,6 @@ class FieldPlot(mglw.WindowConfig):
         X, Y = np.meshgrid(np.linspace(self.xl,self.xu,self.shape[0]), np.linspace(self.xl,self.xu,self.shape[0]))
         IDX = np.arange(self.shape[0]*self.shape[1]).reshape(self.shape)
 
-        # E_max = np.max(np.abs(Etot))
         self.positions = np.array(np.hstack((2*((X.flatten()[:,None]-self.xl)/(self.xu-self.xl)-0.5),
                                         2*((Y.flatten()[:,None]-self.yl)/(self.yu-self.yl)-0.5))),np.float32)
         # fields = np.array(np.hstack((np.real(Etot.flatten())[:,None]/E_max, np.imag(Etot.flatten())[:,None]/E_max)),np.float32)
@@ -247,42 +164,18 @@ class FieldPlot(mglw.WindowConfig):
 
     def render(self, time, frame_time):
         self.ctx.clear(0.0, 0.0, 0.0, 0.0)
-
         #update coordinates
-        # positions = np.array(np.hstack((2*(X.flatten()[:,None]/width-0.5), 2*(Y.flatten()[:,None]/width-0.5))),np.float32)
         self.scale.value = self.scale.value * (1 + self.zoom * frame_time)
-        # self.order.value = self.order.value * (1 + self.sweep * frame_time)
         speed = 0.5 * self.scale.value * frame_time
         self.center.value = (self.center.value[0] + speed*self.velocity[0], self.center.value[1] + speed*self.velocity[1])
-
-        # print(self.center.value, self.scale.value)
-
-        # #solve for the current point
-        # rows = [int(p[0][0]*N) for p in self.sources + [(self.mouse,self.phase)]]
-        # cols = [int(p[0][1]*N) for p in self.sources + [(self.mouse,self.phase)]]
-        # amps = [np.exp(1j*p[1]) for p in self.sources + [(self.mouse,self.phase)]]
-        # J = sps.coo_matrix((amps, (IDX[rows,cols],np.zeros_like(rows))), shape=(N*N,1), dtype=complex)
-        # Etot = self.scatter.solve((self.JFcsr @ J).toarray()).reshape(N,N)
-        # E_max = np.max(np.abs(Etot))
-
-        # fields = np.array(np.hstack((np.real(Etot.flatten())[:,None]/E_max, np.imag(Etot.flatten())[:,None]/E_max)), dtype=np.float32)
-        # Eavg = (Etot[:N-1,:N-1] + Etot[:N-1,1:] + Etot[1:,:N-1] + Etot[1:,1:]) / 4
-
-        # fields =  np.vstack((fields, np.array(np.hstack((np.real(Eavg.flatten())[:,None]/E_max, np.imag(Eavg.flatten())[:,None]/E_max)),np.float32)))
-        # self.vao._buffers[1].buffer.write(data=np.array(fields,dtype=np.float32).data)
-
-        self.vao._buffers[0].buffer.write(data=np.array(self.positions,dtype=np.float32).data)
+        # self.vao._buffers[0].buffer.write(data=np.array(self.positions,dtype=np.float32).data)
+        #render
         self.vao.render(self.prog)
-        # del Etot
-        # del fields
 
     def resize(self, width: int, height: int):
         self.window_size = (width, height)
 
 
-    # self.center.value = (0,0)
-    # self.scale.value = 2
-    # self.cycles.value = 100
     def key_event(self, key, action, modifiers):
         keys = self.wnd.keys
         # Key presses
@@ -299,10 +192,6 @@ class FieldPlot(mglw.WindowConfig):
                 self.zoom = -1 
             if key == keys.Z:
                 self.zoom = 1 
-            # if key == keys.S:
-            #     self.sweep = 1
-            # if key == keys.X:
-            #     self.sweep = -1 
 
         if action == keys.ACTION_RELEASE:
             if key == keys.LEFT:
@@ -317,10 +206,6 @@ class FieldPlot(mglw.WindowConfig):
                 self.zoom = 0
             if key == keys.Z:
                 self.zoom = 0
-            # if key == keys.S:
-            #     self.sweep = 0
-            # if key == keys.X:
-            #     self.sweep = 0
 
 
     # def mouse_position_event(self, x, y, dx, dy): #given in pixels on screen
